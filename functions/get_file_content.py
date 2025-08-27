@@ -1,5 +1,19 @@
 import os
 MAX_CHARS = 10000
+from google.genai import types
+schema_get_files_content = types.FunctionDeclaration(
+    name="get_file_content",
+    description="Read file content.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The file path to file.",
+            ),
+        },
+    ),
+)
 def get_file_content(working_directory, file_path):
     try:
         put = os.path.join(working_directory, file_path)

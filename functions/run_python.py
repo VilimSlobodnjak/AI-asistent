@@ -1,5 +1,24 @@
 import os
 import subprocess
+from google.genai import types
+schema_run_python_file = types.FunctionDeclaration(
+    name="run_python_file",
+    description="Run python file",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The file path to file."),
+            "args": types.Schema(
+            type=types.Type.ARRAY,
+            description="List of arguments to pass to the Python file.",
+            items=types.Schema(type=types.Type.STRING) # Ovdje specificiramo da su elementi stringovi
+            ),
+        },
+    ),
+)
+
 def run_python_file(working_directory, file_path, args=[]):
     try:
         put = os.path.join(working_directory, file_path)
