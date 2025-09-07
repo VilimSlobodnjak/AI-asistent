@@ -4,9 +4,13 @@ from google import genai
 from google.genai import types
 from dotenv import load_dotenv
 from functions.get_files_info import schema_get_files_info
-from functions.get_file_content import schema_get_files_content
+from functions.get_file_content import schema_get_file_content
 from functions.run_python import schema_run_python_file
 from functions.write_file import schema_write_file
+from functions.get_files_info import get_files_info
+from functions.get_file_content import get_file_content
+from functions.run_python import run_python_file
+from functions.write_file import write_file
 def main():
     load_dotenv()
 
@@ -47,7 +51,7 @@ All paths you provide should be relative to the working directory. You do not ne
 available_functions = types.Tool(
     function_declarations=[
         schema_get_files_info,
-        schema_get_files_content,
+        schema_get_file_content,
         schema_run_python_file,
         schema_write_file,
     ]
@@ -64,11 +68,44 @@ def generate_content(client, messages, verbose, user_prompt):
         print("Response tokens:", response.usage_metadata.candidates_token_count)
     if len(response.function_calls) > 0:
         for function_call_part in response.function_calls:
-            print (f"Calling function: {function_call_part.name}({function_call_part.args})")
+            povratna_informacija = call_function(function_call_part, verbose)
     else:
         print("Response:")
         print(response.text)
 
+        
+popis_funkcija={"Get files info": get_files_info,
+                "Get file content":get_file_content,
+                "Write file": write_file,
+                "Run python":run_python_file}      
+def call_function(function_call_part, verbose=False):
+    ispravan_poziv_funkcije = function_call_part.name in popis_funkcija
+    if ispravan_poziv_funkcije == False:
+        return types.Content(
+            role="tool",
+            parts=[
+                types.Part.from_function_response(
+                    name=function_call_part.name,
+                    response={"error": f"Unknown function: {function_call_part.name}"},
+                )
+            ],
+        )
+    if verbose == True:
+        print(f"Calling function: {function_call_part.name}({function_call_part.args})")
+    else:
+        print(f" - Calling function: {function_call_part.name}")
+    pozvana_funkcija = popis_funkcija[function_call_part.name]
+    function_call_part.args["working_directory"] = "./calculator"
+    function_result = pozvana_funkcija(**function_call_part.args)
+    return types.Content(
+        role="tool",
+        parts=[
+            types.Part.from_function_response(
+                name=function_call_part.name,
+                response={"result": function_result},
+            )
+        ],
+    )
 
 if __name__ == "__main__":
     main()

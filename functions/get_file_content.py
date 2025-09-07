@@ -1,7 +1,7 @@
 import os
 MAX_CHARS = 10000
 from google.genai import types
-schema_get_files_content = types.FunctionDeclaration(
+schema_get_file_content = types.FunctionDeclaration(
     name="get_file_content",
     description="Read file content.",
     parameters=types.Schema(
