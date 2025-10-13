@@ -66,9 +66,15 @@ def generate_content(client, messages, verbose, user_prompt):
         print("User prompt:", user_prompt )
         print("Prompt tokens:", response.usage_metadata.prompt_token_count)
         print("Response tokens:", response.usage_metadata.candidates_token_count)
+        print(f"-> {povratna_informacija.parts[0].function_response.response}") 
     if len(response.function_calls) > 0:
         for function_call_part in response.function_calls:
             povratna_informacija = call_function(function_call_part, verbose)
+            if povratna_informacija.parts[0].function_response.response == None:
+                raise Exception
+            messages.append(povratna_informacija)
+        print(f"-> {povratna_informacija.parts[0].function_response.response}")
+
     else:
         print("Response:")
         print(response.text)
