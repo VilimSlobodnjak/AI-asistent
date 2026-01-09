@@ -35,7 +35,7 @@ def main():
     ]
     
     generate_content(client, messages, verbose, user_prompt)
-model_name= "gemini-1.5-flash"
+model_name= "gemini-2.5-flash"
 system_prompt = """
 You are a helpful AI coding agent.
 
@@ -62,28 +62,36 @@ def generate_content(client, messages, verbose, user_prompt):
     contents=messages,
     config=types.GenerateContentConfig(
     tools=[available_functions], system_instruction=system_prompt))
-    if verbose == True:
-        print("User prompt:", user_prompt )
-        print("Prompt tokens:", response.usage_metadata.prompt_token_count)
-        print("Response tokens:", response.usage_metadata.candidates_token_count)
-        print(f"-> {povratna_informacija.parts[0].function_response.response}") 
+    if not response.usage_metadata:
+        raise RuntimeError("Gemini API response appears to be malformed")
+    print("Prompt tokens:", response.usage_metadata.prompt_token_count)
+    print("Response tokens:", response.usage_metadata.candidates_token_count)
     if len(response.function_calls) > 0:
         for function_call_part in response.function_calls:
             povratna_informacija = call_function(function_call_part, verbose)
-            if povratna_informacija.parts[0].function_response.response == None:
-                raise Exception
             messages.append(povratna_informacija)
-        print(f"-> {povratna_informacija.parts[0].function_response.response}")
 
+            if not (len(povratna_informacija.parts) > 0 and \
+                    hasattr(povratna_informacija.parts[0], 'function_response') and \
+                    hasattr(povratna_informacija.parts[0].function_response, 'response')):
+                raise Exception("Neispravan format povratne informacije iz funkcije!")
+
+            function_response_result = povratna_informacija.parts[0].function_response.response
+
+            if function_response_result == None:
+                raise Exception("Function response je None!")
+
+            if verbose:
+                print(f"-> {function_response_result}")
     else:
         print("Response:")
         print(response.text)
 
         
-popis_funkcija={"Get files info": get_files_info,
-                "Get file content":get_file_content,
-                "Write file": write_file,
-                "Run python":run_python_file}      
+popis_funkcija={"get_files_info": get_files_info,
+                "get_file_content": get_file_content,
+                "write_file": write_file,
+                "run_python": run_python_file}      
 def call_function(function_call_part, verbose=False):
     ispravan_poziv_funkcije = function_call_part.name in popis_funkcija
     if ispravan_poziv_funkcije == False:
